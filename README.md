@@ -8,6 +8,18 @@ You tick the calendars you want, and every ticked calendar's events show up in t
 
 It syncs when a calendar changes (after a short delay), every hour, and when you press Sync now. Nothing gets written until two or more calendars are ticked. If you untick one, it asks first, then removes the blocks that calendar created and the ones inside it.
 
+## Which calendars does it work with?
+
+Anything Apple Calendar can sync and write to. In macOS that's the account types under Internet Accounts:
+
+- iCloud
+- Google (Workspace accounts too)
+- Microsoft Exchange, which as far as I know also covers Microsoft 365 and Outlook.com
+- Yahoo and AOL
+- Any CalDAV server (Fastmail, Nextcloud, Synology, Zoho...)
+
+I've only tried Google, Exchange and iCloud, so the rest is me trusting Apple's list. Read-only calendars (subscribed ICS links, birthdays, holidays) don't show up in the picker, since the app has to be able to write to them.
+
 ## Building it
 
 You need macOS 14 or later and the Command Line Tools (no Xcode).
