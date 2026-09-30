@@ -105,6 +105,8 @@ struct PopoverView: View {
       Toggle(model.loginLabel, isOn: Binding(get: { model.loginOn }, set: { model.setLogin($0) }))
       Text("Copies each ticked calendar's events into the others as untitled Busy blocks, \(windowDaysAhead) days ahead. Nothing syncs until two or more are ticked.")
         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+      Text("Icon by [Flat Icons Design](https://www.flaticon.com/free-icons/sync) on Flaticon")
+        .font(.caption2).foregroundStyle(.secondary)
       Divider()
       HStack {
         Spacer()

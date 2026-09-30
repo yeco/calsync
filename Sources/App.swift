@@ -1,6 +1,14 @@
 import EventKit
 import SwiftUI
 
+/// Black outline icon, marked as a template so macOS tints it for light and dark menu bars.
+private let menuBarIcon: NSImage? = {
+  guard let url = Bundle.main.url(forResource: "menubar", withExtension: "png"), let img = NSImage(contentsOf: url) else { return nil }
+  img.size = NSSize(width: 18, height: 18)
+  img.isTemplate = true
+  return img
+}()
+
 @main
 struct CalSyncApp: App {
   @StateObject private var model = Model()
@@ -11,7 +19,11 @@ struct CalSyncApp: App {
     MenuBarExtra {
       PopoverView(model: model)
     } label: {
-      Image(systemName: model.iconName)
+      if model.failures < 3, !model.paused, let icon = menuBarIcon {
+        Image(nsImage: icon)
+      } else {
+        Image(systemName: model.iconName)
+      }
     }
     .menuBarExtraStyle(.window)
   }
