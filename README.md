@@ -20,6 +20,18 @@ Anything Apple Calendar can sync and write to. In macOS that's the account types
 
 I've only tried Google, Exchange and iCloud, so the rest is me trusting Apple's list. Read-only calendars (subscribed ICS links, birthdays, holidays) don't show up in the picker, since the app has to be able to write to them.
 
+## Just want to try it?
+
+Grab `CalSync-x.y.z.zip` from the [latest release](https://github.com/yeco/calsync/releases/latest) and move the app to `/Applications` (or `~/Applications`, either is fine). It isn't notarized, so macOS refuses to open it the first time. This clears the quarantine flag:
+
+```
+xattr -dr com.apple.quarantine /Applications/CalSync.app
+```
+
+Use the same path where you put it.
+
+After that it opens normally and asks for calendar access.
+
 ## Building it
 
 You need macOS 14 or later and the Command Line Tools (no Xcode).
