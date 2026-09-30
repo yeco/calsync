@@ -54,3 +54,7 @@ The planning lives in `Engine.swift` as a plain function, and `CalSync --selftes
 - Mark the blocks private. EventKit has no way to set that.
 - Sync while the Mac is asleep or the app is closed.
 - I've only tried it with a handful of calendars, so I'm not sure how it behaves with ten.
+
+## Credits
+
+The icons are [sync icons created by Flat Icons Design - Flaticon](https://www.flaticon.com/free-icons/sync). They're used under Flaticon's free license with attribution, and the MIT license in this repo doesn't cover them.
