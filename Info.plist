@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>me.yeco.CalSync</string>
-<key>CFBundleName</key><string>CalSync</string>
-<key>CFBundleDisplayName</key><string>CalSync</string>
-<key>CFBundleExecutable</key><string>CalSync</string>
+<key>CFBundleIdentifier</key><string>me.yeco.Dibs</string>
+<key>CFBundleName</key><string>Dibs</string>
+<key>CFBundleDisplayName</key><string>Dibs</string>
+<key>CFBundleExecutable</key><string>Dibs</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.2.0</string>
+<key>CFBundleShortVersionString</key><string>0.2.1</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>LSUIElement</key><true/>
-<key>NSCalendarsFullAccessUsageDescription</key><string>CalSync copies busy blocks between the calendars you tick so your jobs never collide.</string>
-<key>NSCalendarsUsageDescription</key><string>CalSync copies busy blocks between the calendars you tick so your jobs never collide.</string>
+<key>NSCalendarsFullAccessUsageDescription</key><string>Dibs puts Busy blocks on the calendars you pair, so you never get double-booked.</string>
+<key>NSCalendarsUsageDescription</key><string>Dibs puts Busy blocks on the calendars you pair, so you never get double-booked.</string>
 </dict></plist>

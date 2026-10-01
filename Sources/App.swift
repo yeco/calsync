@@ -10,7 +10,7 @@ private let menuBarIcon: NSImage? = {
 }()
 
 @main
-struct CalSyncApp: App {
+struct DibsApp: App {
   @StateObject private var model = Model()
 
   init() { runCommandLineModes() }

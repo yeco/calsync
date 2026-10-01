@@ -153,7 +153,7 @@ struct PopoverView: View {
       Divider()
       HStack {
         Spacer()
-        Button("Quit CalSync") { NSApplication.shared.terminate(nil) }
+        Button("Quit Dibs") { NSApplication.shared.terminate(nil) }
       }
     }
   }

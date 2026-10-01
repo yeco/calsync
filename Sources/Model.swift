@@ -70,11 +70,20 @@ final class Model: ObservableObject {
 
   /// Saved pairs; first launch after the pairs upgrade turns the old ticked list into all-pairs two-way rows.
   private func loadRows() -> [PairRow] {
+    importFromCalSync()
     if let data = defaults.data(forKey: "pairs"), let saved = try? JSONDecoder().decode([PairRow].self, from: data) { return saved }
     guard let data = defaults.data(forKey: "selection"), let old = try? JSONDecoder().decode([SelRef].self, from: data) else { return [] }
     let migrated = old.indices.flatMap { i in old.indices.filter { $0 > i }.map { PairRow(a: old[i], b: old[$0], dir: .both) } }
     if let data = try? JSONEncoder().encode(migrated) { defaults.set(data, forKey: "pairs") }
     return migrated
+  }
+
+  /// The app used to be CalSync (bundle id me.yeco.CalSync). Carry its saved pairs and pause flag over, once.
+  private func importFromCalSync() {
+    guard defaults.object(forKey: "pairs") == nil, defaults.object(forKey: "selection") == nil,
+          let old = defaults.persistentDomain(forName: "me.yeco.CalSync") else { return }
+    for key in ["pairs", "selection", "paused"] { if let v = old[key] { defaults.set(v, forKey: key) } }
+    paused = defaults.bool(forKey: "paused")
   }
 
   private func start() async {

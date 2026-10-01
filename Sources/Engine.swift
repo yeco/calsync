@@ -1,7 +1,7 @@
 import Foundation
 
 // Pure planning: given what is on the calendars, decide what to create/update/delete.
-// No EventKit in here so it can be self-checked (`CalSync --selftest`).
+// No EventKit in here so it can be self-checked (`Dibs --selftest`).
 
 let markerV2 = "calsync:v2|"
 
