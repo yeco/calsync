@@ -50,10 +50,22 @@ final class Model: ObservableObject {
     return hasAccess && !calendars.contains { $0.id == ref.id }
   }
 
+  /// `--demo`: fake calendars and pairs for README screenshots. Never touches EventKit or the saved pairs.
+  private let demo = CommandLine.arguments.contains("--demo")
+
   init() {
     paused = defaults.bool(forKey: "paused")
+    if demo { loadDemo(); return }
     rows = loadRows()
     Task { await start() }
+  }
+
+  private func loadDemo() {
+    let cals = [("iCloud", "Home"), ("iCloud", "Family"), ("Work", "Calendar"), ("Work", "Projects"), ("Google", "Personal")]
+    calendars = cals.map { CalInfo(id: "\($0.0)/\($0.1)", source: $0.0, title: $0.1) }
+    func ref(_ i: Int) -> SelRef { SelRef(id: calendars[i].id, source: calendars[i].source, title: calendars[i].title) }
+    rows = [PairRow(a: ref(2), b: ref(0), dir: .both), PairRow(a: ref(4), b: ref(2), dir: .forward), PairRow(a: ref(3), b: ref(1), dir: .backward)]
+    status = "OK · 09:41 · 3 pairs · no changes"
   }
 
   /// Saved pairs; first launch after the pairs upgrade turns the old ticked list into all-pairs two-way rows.
@@ -90,6 +102,7 @@ final class Model: ObservableObject {
 
   /// Incomplete rows are not saved: a half-filled row is gone after a relaunch.
   private func persist() {
+    guard !demo else { return }
     let complete = rows.filter { $0.a != nil && $0.b != nil }
     if let data = try? JSONEncoder().encode(complete) { defaults.set(data, forKey: "pairs") }
   }
@@ -123,6 +136,7 @@ final class Model: ObservableObject {
 
   /// Apply a new row list. If it orphans Busy blocks, ask first; Cancel leaves everything as it was.
   private func commit(_ next: [PairRow]) {
+    if demo { rows = next; return }
     let snap = store.snapshot(selected: endpoints(next))
     let plan = planSync(edges: edges(next), missing: snap.missing, sources: snap.sources, copies: snap.copies)
     if plan.orphanDeletes.count > 0 {
