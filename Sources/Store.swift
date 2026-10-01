@@ -14,6 +14,16 @@ struct SelRef: Codable, Hashable {
   var title: String
 }
 
+enum Direction: String, Codable { case both, forward, backward }  // forward: a → b
+
+/// One row of the pair list. Either side is nil until picked.
+struct PairRow: Codable, Identifiable, Hashable {
+  var id = UUID()
+  var a: SelRef?
+  var b: SelRef?
+  var dir: Direction
+}
+
 struct Snapshot {
   var sources: [SrcEvent] = []
   var copies: [CopyEvent] = []

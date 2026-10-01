@@ -11,15 +11,13 @@ final class Model: ObservableObject {
   private let defaults = UserDefaults.standard
 
   @Published var calendars: [CalInfo] = []
-  @Published var selected: Set<String> = []
-  @Published var missing: [SelRef] = []
+  @Published var rows: [PairRow] = []
   @Published var status = "Starting…"
   @Published var paused: Bool { didSet { defaults.set(paused, forKey: "paused"); if !paused { requestSync("resume") } } }
   @Published var failures = 0
   @Published var phase: SyncPhase = .idle
   @Published var loginStatus: SMAppService.Status = SMAppService.mainApp.status
 
-  private var refs: [SelRef] = []
   private var hasAccess = false
   private var debounce: Task<Void, Never>?
   private var observer: NSObjectProtocol?
@@ -30,16 +28,47 @@ final class Model: ObservableObject {
     Dictionary(grouping: calendars, by: \.source).map { ($0.key, $0.value) }.sorted { $0.0 < $1.0 }
   }
 
+  /// Directed links from the complete rows.
+  private func edges(_ rows: [PairRow]) -> Set<Edge> {
+    var out = Set<Edge>()
+    for r in rows {
+      guard let a = r.a?.id, let b = r.b?.id else { continue }
+      if r.dir != .backward { out.insert(Edge(src: a, dst: b)) }
+      if r.dir != .forward { out.insert(Edge(src: b, dst: a)) }
+    }
+    return out
+  }
+
+  private func endpoints(_ rows: [PairRow]) -> Set<String> {
+    Set(rows.flatMap { [$0.a?.id, $0.b?.id].compactMap { $0 } })
+  }
+
+  var activePairs: Int { rows.filter { $0.a != nil && $0.b != nil }.count }
+
+  func isMissing(_ ref: SelRef?) -> Bool {
+    guard let ref else { return false }
+    return hasAccess && !calendars.contains { $0.id == ref.id }
+  }
+
   init() {
     paused = defaults.bool(forKey: "paused")
-    if let data = defaults.data(forKey: "selection"), let saved = try? JSONDecoder().decode([SelRef].self, from: data) { refs = saved }
+    rows = loadRows()
     Task { await start() }
+  }
+
+  /// Saved pairs; first launch after the pairs upgrade turns the old ticked list into all-pairs two-way rows.
+  private func loadRows() -> [PairRow] {
+    if let data = defaults.data(forKey: "pairs"), let saved = try? JSONDecoder().decode([PairRow].self, from: data) { return saved }
+    guard let data = defaults.data(forKey: "selection"), let old = try? JSONDecoder().decode([SelRef].self, from: data) else { return [] }
+    let migrated = old.indices.flatMap { i in old.indices.filter { $0 > i }.map { PairRow(a: old[i], b: old[$0], dir: .both) } }
+    if let data = try? JSONEncoder().encode(migrated) { defaults.set(data, forKey: "pairs") }
+    return migrated
   }
 
   private func start() async {
     hasAccess = await store.requestAccess()
     guard hasAccess else { status = "Calendar access denied — allow it in System Settings"; failures = 3; return }
-    resolveSelection()
+    resolveRows()
     observer = NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: nil, queue: .main) { [weak self] _ in
       Task { @MainActor in self?.requestSync("change", delay: 10) }
     }
@@ -47,53 +76,67 @@ final class Model: ObservableObject {
     requestSync("launch", delay: 1)
   }
 
-  /// Match saved refs to live calendars: by id, then by account + title. Unmatched refs are "missing".
-  private func resolveSelection() {
+  /// Match saved refs to live calendars: by id, then by account + title. Unmatched refs stay as they are and show as missing.
+  private func resolveRows() {
     calendars = store.infos()
-    var ids = Set<String>(), gone: [SelRef] = [], fixed: [SelRef] = []
-    for ref in refs {
-      if let c = calendars.first(where: { $0.id == ref.id }) ?? calendars.first(where: { $0.source == ref.source && $0.title == ref.title }) {
-        ids.insert(c.id); fixed.append(SelRef(id: c.id, source: c.source, title: c.title))
-      } else { gone.append(ref); fixed.append(ref) }
+    func fix(_ ref: SelRef?) -> SelRef? {
+      guard let ref else { return nil }
+      guard let c = calendars.first(where: { $0.id == ref.id }) ?? calendars.first(where: { $0.source == ref.source && $0.title == ref.title }) else { return ref }
+      return SelRef(id: c.id, source: c.source, title: c.title)
     }
-    refs = fixed
-    missing = gone
-    selected = ids
+    rows = rows.map { PairRow(id: $0.id, a: fix($0.a), b: fix($0.b), dir: $0.dir) }
     persist()
   }
 
+  /// Incomplete rows are not saved: a half-filled row is gone after a relaunch.
   private func persist() {
-    if let data = try? JSONEncoder().encode(refs) { defaults.set(data, forKey: "selection") }
+    let complete = rows.filter { $0.a != nil && $0.b != nil }
+    if let data = try? JSONEncoder().encode(complete) { defaults.set(data, forKey: "pairs") }
   }
 
-  private var activeIds: Set<String> { selected }
-  private var missingIds: Set<String> { Set(missing.map(\.id)) }
+  // MARK: pairs
 
-  // MARK: selection
+  func addRow() { rows.append(PairRow(a: nil, b: nil, dir: .both)) }
 
-  func setSelected(_ id: String, _ on: Bool) {
-    guard let cal = calendars.first(where: { $0.id == id }) else { return }
-    if !on {
-      let next = selected.subtracting([id])
-      let snap = store.snapshot(selected: next)
-      let plan = planSync(selected: next.union(missingIds), missing: missingIds, sources: snap.sources, copies: snap.copies)
-      if plan.orphanDeletes.count > 0 {
-        NSApp.activate(ignoringOtherApps: true)
-        let alert = NSAlert()
-        alert.messageText = "Remove \(plan.orphanDeletes.count) blocks?"
-        alert.informativeText = "Unticking “\(cal.title)” deletes the Busy blocks it created in your other calendars and the ones inside it."
-        alert.addButton(withTitle: "Remove")
-        alert.addButton(withTitle: "Cancel")
-        if alert.runModal() != .alertFirstButtonReturn { objectWillChange.send(); return }
-      }
-      selected = next
-      refs.removeAll { $0.id == id }
-    } else {
-      selected.insert(id)
-      refs.append(SelRef(id: id, source: cal.source, title: cal.title))
+  func removeRow(_ id: UUID) { commit(rows.filter { $0.id != id }) }
+
+  func setDir(_ id: UUID, _ dir: Direction) { commit(rows.map { $0.id == id ? PairRow(id: id, a: $0.a, b: $0.b, dir: dir) : $0 }) }
+
+  func setCal(_ id: UUID, sideA: Bool, _ cal: CalInfo) {
+    let ref = SelRef(id: cal.id, source: cal.source, title: cal.title)
+    commit(rows.map { r in
+      guard r.id == id else { return r }
+      return PairRow(id: id, a: sideA ? ref : r.a, b: sideA ? r.b : ref, dir: r.dir)
+    })
+  }
+
+  /// Calendars a dropdown must not offer: the other side, and anything already paired with it in another row.
+  func disabled(row: PairRow, sideA: Bool) -> Set<String> {
+    guard let other = sideA ? row.b?.id : row.a?.id else { return [] }
+    var ids: Set<String> = [other]
+    for r in rows where r.id != row.id {
+      if r.a?.id == other, let x = r.b?.id { ids.insert(x) }
+      if r.b?.id == other, let x = r.a?.id { ids.insert(x) }
     }
+    return ids
+  }
+
+  /// Apply a new row list. If it orphans Busy blocks, ask first; Cancel leaves everything as it was.
+  private func commit(_ next: [PairRow]) {
+    let snap = store.snapshot(selected: endpoints(next))
+    let plan = planSync(edges: edges(next), missing: snap.missing, sources: snap.sources, copies: snap.copies)
+    if plan.orphanDeletes.count > 0 {
+      NSApp.activate(ignoringOtherApps: true)
+      let alert = NSAlert()
+      alert.messageText = "Remove \(plan.orphanDeletes.count) blocks?"
+      alert.informativeText = "This change deletes the Busy blocks that the removed link created."
+      alert.addButton(withTitle: "Remove")
+      alert.addButton(withTitle: "Cancel")
+      if alert.runModal() != .alertFirstButtonReturn { objectWillChange.send(); return }
+    }
+    rows = next
     persist()
-    requestSync("selection")
+    requestSync("pairs")
   }
 
   // MARK: sync
@@ -110,7 +153,7 @@ final class Model: ObservableObject {
   /// "Sync now": show a spinner, run immediately, then flash the result for a moment.
   func manualSync() {
     guard phase == .idle else { return }
-    guard selected.count >= 2 else { flash(.notReady); return }
+    guard activePairs > 0 else { flash(.notReady); return }
     phase = .syncing
     Task {
       try? await Task.sleep(nanoseconds: 150_000_000)  // let the spinner draw before the (blocking) sync
@@ -134,12 +177,11 @@ final class Model: ObservableObject {
   private func sync(_ reason: String) {
     guard hasAccess else { return }
     calendars = store.infos()
-    let ticked = selected.union(missingIds)
-    guard selected.count >= 2 else { status = "Tick at least two calendars"; return }
+    guard activePairs > 0 else { status = "Add a calendar pair"; return }
     guard !paused else { status = "Paused"; return }
 
-    let snap = store.snapshot(selected: ticked)
-    let plan = planSync(selected: ticked, missing: snap.missing.union(missingIds), sources: snap.sources, copies: snap.copies)
+    let snap = store.snapshot(selected: endpoints(rows))
+    let plan = planSync(edges: edges(rows), missing: snap.missing, sources: snap.sources, copies: snap.copies)
     var errors = 0
     if !plan.isEmpty {
       retireOldScript()
@@ -148,7 +190,7 @@ final class Model: ObservableObject {
     failures = errors > 0 ? failures + 1 : 0
     let f = DateFormatter(); f.dateFormat = "HH:mm"
     let changes = plan.isEmpty ? "no changes" : "+\(plan.creates.count) ~\(plan.updates.count) −\(plan.deleteCount)"
-    status = "\(errors > 0 ? "Error" : "OK") · \(f.string(from: Date())) · \(selected.count) calendars · \(changes)"
+    status = "\(errors > 0 ? "Error" : "OK") · \(f.string(from: Date())) · \(activePairs) pairs · \(changes)"
     print("sync(\(reason)): \(status)")
   }
 

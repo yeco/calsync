@@ -4,9 +4,9 @@ I wanted my calendars to stop stepping on each other. The usual route is OAuth a
 
 ## What does it do?
 
-You tick the calendars you want, and every ticked calendar's events show up in the others as untitled "Busy" blocks for the next 60 days. No titles, notes, locations or attendees, so nothing from one place leaks into the other. All-day, free, cancelled and declined events are skipped.
+You pick pairs of calendars. Each pair has an arrow that sets the direction (left, right, or both), and events show up in the receiving calendar as untitled "Busy" blocks for the next 60 days. No titles, notes, locations or attendees, so nothing from one place leaks into the other. All-day, free, cancelled and declined events are skipped.
 
-It syncs when a calendar changes (after a short delay), every hour, and when you press Sync now. Nothing gets written until two or more calendars are ticked. If you untick one, it asks first, then removes the blocks that calendar created and the ones inside it.
+It syncs when a calendar changes (after a short delay), every hour, and when you press Sync now. Nothing gets written until a pair is set. If you remove a pair or change its direction, it asks first, then removes the blocks that link created.
 
 ## Which calendars does it work with?
 
