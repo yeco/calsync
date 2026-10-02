@@ -4,6 +4,8 @@ Dibs is a free macOS menu bar app that prevents double-booking when you keep mor
 
 I wanted my calendars to stop stepping on each other. The usual route is OAuth against every account, which means registering an app with each provider and, for some accounts, waiting on an admin to approve it. Apple Calendar already had everything signed in though, so Dibs goes through Calendar (EventKit) instead. No logins, no servers, nothing leaves your Mac.
 
+![Dibs menu bar popover with one pair of calendars set to sync busy time both ways](docs/popover.png)
+
 ## How does Dibs prevent double-booking?
 
 You pick pairs of calendars. Each pair has an arrow that sets the direction (left, right, or both), and events show up in the receiving calendar as untitled "Busy" blocks for the next 60 days. No titles, notes, locations or attendees, so nothing from one place leaks into the other. All-day, free, cancelled and declined events are skipped.

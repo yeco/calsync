@@ -213,7 +213,7 @@ final class Model: ObservableObject {
     failures = errors > 0 ? failures + 1 : 0
     let f = DateFormatter(); f.dateFormat = "HH:mm"
     let changes = plan.isEmpty ? "no changes" : "+\(plan.creates.count) ~\(plan.updates.count) −\(plan.deleteCount)"
-    status = "\(errors > 0 ? "Error" : "OK") · \(f.string(from: Date())) · \(activePairs) pairs · \(changes)"
+    status = "\(errors > 0 ? "Error" : "OK") · \(f.string(from: Date())) · \(activePairs) \(activePairs == 1 ? "pair" : "pairs") · \(changes)"
     print("sync(\(reason)): \(status)")
   }
 
