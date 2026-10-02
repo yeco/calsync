@@ -13,7 +13,12 @@ private let menuBarIcon: NSImage? = {
 struct DibsApp: App {
   @StateObject private var model = Model()
 
-  init() { runCommandLineModes() }
+  init() {
+    runCommandLineModes()
+    // A new bundle id has no saved menu bar slot, and macOS then parks the icon at the far left, hidden under long app menus.
+    let slot = "NSStatusItem Preferred Position Item-0"
+    if UserDefaults.standard.object(forKey: slot) == nil { UserDefaults.standard.set(350.0, forKey: slot) }
+  }
 
   var body: some Scene {
     MenuBarExtra {

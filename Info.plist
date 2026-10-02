@@ -7,7 +7,7 @@
 <key>CFBundleExecutable</key><string>Dibs</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.2.1</string>
+<key>CFBundleShortVersionString</key><string>0.2.2</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>LSUIElement</key><true/>
 <key>NSCalendarsFullAccessUsageDescription</key><string>Dibs puts Busy blocks on the calendars you pair, so you never get double-booked.</string>
